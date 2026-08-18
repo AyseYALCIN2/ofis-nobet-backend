@@ -1,0 +1,127 @@
+{
+    "kullanicilar": [
+        {
+            "id": 1,
+            "ad_soyad": "sade",
+            "email": "sade@gmail.com",
+            "kullanici_durum": "aktif"
+        },
+        {
+            "id": 2,
+            "ad_soyad": "Ayşe Yalçın",
+            "email": "ayseyalcin2222@gmail.com",
+            "kullanici_durum": "aktif"
+        },
+        {
+            "id": 3,
+            "ad_soyad": "ada",
+            "email": "ada@gmail.com",
+            "kullanici_durum": "aktif"
+        }
+    ],
+    "loglar": [
+        {
+            "id": 10,
+            "eylem": "SU nöbeti devredildi. Yeni sorumlu: sade",
+            "tarih": "2026-08-18T10:43:52.862625"
+        },
+        {
+            "id": 9,
+            "eylem": "Ayşe Yalçın, SU sırasını pas geçti. Yeni sorumlu: ada",
+            "tarih": "2026-08-18T10:43:49.851321"
+        },
+        {
+            "id": 8,
+            "eylem": "SU nöbeti devredildi. Yeni sorumlu: Ayşe Yalçın",
+            "tarih": "2026-08-18T10:43:41.729029"
+        },
+        {
+            "id": 7,
+            "eylem": "SU nöbeti başlatıldı. İlk sorumlu: sade",
+            "tarih": "2026-08-18T10:43:39.041615"
+        },
+        {
+            "id": 6,
+            "eylem": "Ayşe Yalçın görevini sade ile takas etti.",
+            "tarih": "2026-08-18T10:41:10.003588"
+        },
+        {
+            "id": 5,
+            "eylem": "CAY nöbeti devredildi. Yeni sorumlu: Ayşe Yalçın",
+            "tarih": "2026-08-18T10:41:01.705948"
+        },
+        {
+            "id": 4,
+            "eylem": "CAY nöbeti başlatıldı. İlk sorumlu: sade",
+            "tarih": "2026-08-18T10:40:57.883140"
+        },
+        {
+            "id": 3,
+            "eylem": "ada sisteme eklendi.",
+            "tarih": "2026-08-18T10:40:52.687546"
+        },
+        {
+            "id": 2,
+            "eylem": "Ayşe Yalçın sisteme eklendi.",
+            "tarih": "2026-08-18T10:40:32.056579"
+        },
+        {
+            "id": 1,
+            "eylem": "sade sisteme eklendi.",
+            "tarih": "2026-08-18T10:40:03.749567"
+        }
+    ],
+    "cay_listesi": [
+        {
+            "nobet_id": 11,
+            "kullanici_id": 1,
+            "sira_no": 2,
+            "ad_soyad": "sade",
+            "sorumlu_mu": true,
+            "kullanici_durum": "aktif"
+        },
+        {
+            "nobet_id": 22,
+            "kullanici_id": 2,
+            "sira_no": 1,
+            "ad_soyad": "Ayşe Yalçın",
+            "sorumlu_mu": false,
+            "kullanici_durum": "aktif"
+        },
+        {
+            "nobet_id": 33,
+            "kullanici_id": 3,
+            "sira_no": 3,
+            "ad_soyad": "ada",
+            "sorumlu_mu": false,
+            "kullanici_durum": "aktif"
+        }
+    ],
+    "su_listesi": [
+        {
+            "nobet_id": 11,
+            "kullanici_id": 1,
+            "sira_no": 1,
+            "ad_soyad": "sade",
+            "sorumlu_mu": true,
+            "kullanici_durum": "aktif"
+        },
+        {
+            "nobet_id": 22,
+            "kullanici_id": 2,
+            "sira_no": 2,
+            "ad_soyad": "Ayşe Yalçın",
+            "sorumlu_mu": false,
+            "kullanici_durum": "aktif"
+        },
+        {
+            "nobet_id": 33,
+            "kullanici_id": 3,
+            "sira_no": 3,
+            "ad_soyad": "ada",
+            "sorumlu_mu": false,
+            "kullanici_durum": "aktif"
+        }
+    ],
+    "izinler": []
+}
