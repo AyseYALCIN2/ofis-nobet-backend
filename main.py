@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import requests  # YENİ EKLENDİ
+import requests
 import smtplib
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 from typing import Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 # ==========================================
-# 1. JSONBIN BULUT BAĞLANTISI (YENİ SİSTEM)
+# 1. JSONBIN BULUT BAĞLANTISI
 # ==========================================
 BIN_ID = "6a8411c3da38895dfef1d1a8"
 API_KEY = "$2a$10$pXDTgZeZJDW/a0zcomMd3uEEBbVQ7S8xILRQcvsJIChKFF3phMvcW"
@@ -31,23 +31,21 @@ def veriyi_oku():
     response = requests.get(JSONBIN_URL, headers=headers)
     if response.status_code == 200:
         return response.json()['record']
-    else:
-        # Hata olursa veya boşsa başlangıç iskeletini döndür
-        return {"kullanicilar": [], "loglar": [], "cay_listesi": [], "su_listesi": [], "izinler": []}
+    return {"kullanicilar": [], "loglar": [], "cay_listesi": [], "su_listesi": [], "izinler": []}
 
 def veriyi_kaydet(veri):
-    headers = {
-        'Content-Type': 'application/json',
-        'X-Master-Key': API_KEY
-    }
-    # Veriyi buluttaki JSON kasasına günceller (PUT)
+    headers = {'Content-Type': 'application/json', 'X-Master-Key': API_KEY}
     requests.put(JSONBIN_URL, json=veri, headers=headers)
 
 def log_ekle(veri, eylem):
     veri["loglar"].insert(0, {"id": len(veri["loglar"]) + 1, "eylem": eylem, "tarih": datetime.now().isoformat()})
 
+def get_turkey_today():
+    tz_tr = timezone(timedelta(hours=3))
+    return str(datetime.now(tz_tr).date())
+
 # ==========================================
-# 2. GERÇEK E-POSTA GÖNDERME FONKSİYONU
+# 2. E-POSTA GÖNDERME
 # ==========================================
 def eposta_gonder(alici_email: str, konu: str, icerik: str):
     gonderici_email = "ayseyalcin2222ay@gmail.com"
@@ -86,7 +84,7 @@ class IzinModel(BaseModel):
     bitis_tarihi: Optional[str] = None
 
 # ==========================================
-# 4. API KONTROL VE KULLANICI İŞLEMLERİ
+# 4. KULLANICI İŞLEMLERİ
 # ==========================================
 @app.get("/")
 def read_root():
@@ -172,15 +170,10 @@ def izin_ekle(model: IzinModel):
     veriyi_kaydet(veri)
     return {"mesaj": "İzin kaydedildi"}
 
-# ==========================================
-# 5. GERÇEK BİLDİRİM VE MAİL UÇ NOKTALARI
-# ==========================================
 @app.post("/api/bildirim/cay")
 def cay_bildirimi(durum: str, background_tasks: BackgroundTasks):
     veri = veriyi_oku()
     sorumlu = next((k for k in veri["cay_listesi"] if k["sorumlu_mu"]), None)
-    if not sorumlu:
-        raise HTTPException(status_code=400, detail="Aktif sorumlu bulunamadı.")
     kullanici = next((k for k in veri["kullanicilar"] if k["id"] == sorumlu["kullanici_id"]))
     
     if durum == "azaldi":
@@ -199,8 +192,6 @@ def cay_bildirimi(durum: str, background_tasks: BackgroundTasks):
 def su_bildirimi(background_tasks: BackgroundTasks):
     veri = veriyi_oku()
     sorumlu = next((k for k in veri["su_listesi"] if k["sorumlu_mu"]), None)
-    if not sorumlu:
-        raise HTTPException(status_code=400, detail="Aktif sorumlu bulunamadı.")
     kullanici = next((k for k in veri["kullanicilar"] if k["id"] == sorumlu["kullanici_id"]))
     
     konu = "💧 Yarın Su Geliyor - Nöbet Hatırlatması"
@@ -212,7 +203,7 @@ def su_bildirimi(background_tasks: BackgroundTasks):
     return {"mesaj": "Gönderildi."}
 
 # ==========================================
-# 6. NÖBET DÖNGÜSÜ İŞLEMLERİ
+# 5. DÖNGÜ VE İZİN ATLAMALARI 
 # ==========================================
 @app.get("/api/nobet/liste/{gorev_tipi}")
 def get_liste(gorev_tipi: str):
@@ -226,17 +217,17 @@ def get_loglar():
 @app.post("/api/nobet/baslat/{gorev_tipi}")
 def sistemi_baslat(gorev_tipi: str):
     veri = veriyi_oku()
-    liste_adi = f"{gorev_tipi}_listesi"
-    liste = veri[liste_adi]
+    liste = veri[f"{gorev_tipi}_listesi"]
+    
+    liste.sort(key=lambda x: x["sira_no"])
     
     if any(k["sorumlu_mu"] for k in liste):
         return {"mesaj": "Sistem zaten aktif."}
-        
     if len(liste) == 0:
         raise HTTPException(status_code=400, detail="Listede kimse yok!")
 
-    bugun_str = str(date.today())
-    for k in sorted(liste, key=lambda x: x["sira_no"]):
+    bugun_str = get_turkey_today()
+    for k in liste:
         if k["kullanici_durum"] == "pasif":
             continue
             
@@ -260,13 +251,15 @@ def tamamla(gorev_tipi: str):
     veri = veriyi_oku()
     liste = veri[f"{gorev_tipi}_listesi"]
     
+    liste.sort(key=lambda x: x["sira_no"]) 
+    
     aktif_index = next((i for i, k in enumerate(liste) if k["sorumlu_mu"]), -1)
     if aktif_index == -1 or len(liste) == 0:
         raise HTTPException(status_code=400, detail="Devredilecek aktif sorumlu bulunamadı.")
         
     aranan_index = aktif_index
     yeni_sorumlu_bulundu = False
-    bugun_str = str(date.today())
+    bugun_str = get_turkey_today()
 
     for _ in range(len(liste) - 1):
         aranan_index = (aranan_index + 1) % len(liste)
@@ -281,6 +274,7 @@ def tamamla(gorev_tipi: str):
                 bas, bit = izin["baslangic_tarihi"], izin["bitis_tarihi"]
                 if (bit and bas <= bugun_str <= bit) or (not bit and bas <= bugun_str):
                     izinli_mi = True
+        
         if izinli_mi:
             continue
             
@@ -301,13 +295,15 @@ def atla(gorev_tipi: str):
     veri = veriyi_oku()
     liste = veri[f"{gorev_tipi}_listesi"]
     
+    liste.sort(key=lambda x: x["sira_no"]) 
+    
     aktif_index = next((i for i, k in enumerate(liste) if k["sorumlu_mu"]), -1)
     if aktif_index == -1 or len(liste) == 0:
         raise HTTPException(status_code=400, detail="Atlanacak aktif sorumlu bulunamadı.")
         
     aranan_index = aktif_index
     yeni_sorumlu_bulundu = False
-    bugun_str = str(date.today())
+    bugun_str = get_turkey_today()
 
     for _ in range(len(liste) - 1):
         aranan_index = (aranan_index + 1) % len(liste)
@@ -322,6 +318,7 @@ def atla(gorev_tipi: str):
                 bas, bit = izin["baslangic_tarihi"], izin["bitis_tarihi"]
                 if (bit and bas <= bugun_str <= bit) or (not bit and bas <= bugun_str):
                     izinli_mi = True
+        
         if izinli_mi:
             continue
             
